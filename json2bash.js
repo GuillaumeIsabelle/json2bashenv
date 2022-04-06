@@ -31,16 +31,31 @@ const helpExample = `  `;
 
 argv =
   yargs(hideBin(process.argv))
-
+    
     .scriptName("json2bash")
-    .command('<jsonFile> "[objArray]"')
-    .usage(appStartMessage + helpExample)
+    // .usage(appStartMessage + helpExample)
+    .usage('$0 <jsonFile> [objCsvArray] [fileout]',"run the thing",(yargs) => {
+      yargs.positional('jsonFile', {
+        describe: 'json File input',
+        type: 'string'
+      }),
+      yargs.positional('objCsvArray', {
+        describe: 'object to extract in the file as csv',
+        type: 'string',
+        default: '.'
+      }),
+      yargs.positional('fileout', {
+        describe: 'env file output',
+        type: 'string',
+        default: null
+      })
+    })
     .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
 
-    .option('tolower', {
+    .option('var2Lower', {
       default: false,
       type: 'boolean',
-      alias: ['tl', 'toLowerCase', 't', 'lc'],
+      alias: ['tolower','tl', 'toLowerCase', 't', 'lc'],
       description: 'Changes env name to lowercase'
     })
     .option('prefix', {
@@ -50,7 +65,7 @@ argv =
       description: 'prefix selected object output to var'
     })
     .option('onlyselected', {
-      alias: ['o', 'os', 'oa'],
+      alias: ['o', 'os', 'oa','os','only'],
       default: false,
       type: 'boolean',
       description: 'select only value of obj array as arg 2'
@@ -61,20 +76,14 @@ argv =
       type: 'boolean',
       description: 'Run with verbose logging'
     })
-    // .option('fileout',
-    //   {
-    //     alias: ['f', 'o','fo','out'],
-    //     default: "",
-    //     type : 'string',
-    //     description: "define an output file.  default: to std out"
-    //   })
     .option('debug', {
       alias: 'd',
       default: false,
       type: 'boolean',
       description: 'Run with debug output'
     })
-    .example("json2bash samplelevel.json --tolower", "simple output")
+    .example("json2bash sample.json --tolower", "simple output")
+    .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
     .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
     .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
     .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
@@ -82,35 +91,30 @@ argv =
 
 //-----------
 
-var d = argv.debug;
-var var2Lower = argv.tolower;
-var prefix = argv.prefix;
-var onlyselected = argv.onlyselected;
-// var fileout = argv.fileout;
+var {var2Lower,prefix,onlyselected,fileout,debug,verbose} = argv;
+var d = debug;
+
+//var fileout = argv.fileout? argv.fileout: null;
+var noFileOut = fileout == null;
+if (d) console.log(fileout,noFileOut);
 var config = null;
 
 
-
-
+if (d) console.log(argv);
 
 try {
-
   var tst = require('dotenv').config()
   if (tst.parsed) {
     config = new Object()
     var { json2bashtofile, json2bashtofilepath } = tst.parsed;
-
-  }
-
-
-} catch (error) { }
+  }} catch (error) { }
 
 
 try {
 
   if (d) console.log(argv);
 
-  var filein = argv._[0];
+  var filein = argv.jsonFile //argv._[0];
   var level = "";
 
 
@@ -120,7 +124,8 @@ try {
 
   if (d) console.log(jsonObject.PublicIp)
 
-  if (argv._[1]) level = argv._[1];
+  // if (argv._[1]) level = argv._[1];
+  if (argv.objCsvArray) level = argv.objCsvArray;
   var out = [];
   var c = 0;
   Object.entries(jsonObject).forEach(entry => {
@@ -150,8 +155,15 @@ try {
         if (key == kl) {
           if (d) console.log(key, ":", kl);
           var prefixKey = kl;
-
-          parseObject2Bash(value, kl);
+          
+          var o = parseObject2Bash(value, kl, noFileOut);
+          if (o ) {
+           if (verbose) console.log("Fileout activated")
+            o.forEach(oelem => {
+              out[c] = oelem;
+              c++;
+            });
+          }
         }
       });
 
@@ -160,9 +172,27 @@ try {
   });
   if (d) console.log("-------------")
   if (d) console.log(out)
+
+  var content = "";
   out.forEach(element => {
-    console.log(element)
+    //            Output to console 
+    if (noFileOut)
+      console.log(element)
+      //            or create a content to write to file
+    else content += element +"\n";
   });
+
+  if (!noFileOut) {
+    console.log("Writting file:",fileout);        
+    try {
+      fs.writeFileSync(fileout, content);
+      //file written successfully
+    } catch (err) {
+      console.log("Error writing file:",fileout);
+      console.error(err)
+    }
+
+  }
 
 
 } catch (error) {
@@ -176,12 +206,14 @@ try {
 
 
 /**
- * Parse object 2 bash function
+ *  Parse object 2 bash function
  * 
  * @param {*} jsonObject 
  * @param {*} oLevelName 
+ * @param {*} outputToStdOut 
+ * @returns 
  */
-function parseObject2Bash(jsonObject, oLevelName = "") {
+function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false) {
 
   if (d) console.log("olevel:", oLevelName);
   if (d) console.log(jsonObject);
@@ -215,7 +247,10 @@ function parseObject2Bash(jsonObject, oLevelName = "") {
 
     i++;
   });
-  out.forEach(element => {
-    console.log(element)
-  });
+  if (outputToStdOut)
+    out.forEach(element => {
+      console.log(element)
+    });
+  else 
+   return out;
 }
