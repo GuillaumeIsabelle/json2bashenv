@@ -86,7 +86,7 @@ var d = argv.debug;
 var var2Lower = argv.tolower;
 var prefix = argv.prefix;
 var onlyselected = argv.onlyselected;
-var fileout = argv.fileout;
+// var fileout = argv.fileout;
 var config = null;
 
 
