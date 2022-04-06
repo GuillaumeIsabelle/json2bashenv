@@ -92,7 +92,7 @@ yargs(hideBin(process.argv))
     .option('var2Lower', {
       default: false,
       type: 'boolean',
-      alias: ['tolower', 'tl', 'toLowerCase', 't', 'lc'],
+      alias: ['tolower', 'tl', 'toLowerCase', 'lc','l'],
       description: 'Changes env name to lowercase'
     })
     .option('prefix', {
@@ -136,6 +136,7 @@ yargs(hideBin(process.argv))
     .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
     .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
     .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
+    .example("./json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
     .argv;
     
     //-----------
@@ -207,17 +208,38 @@ function main(rawdata) {
 
     let jsonObject = JSON.parse(rawdata);
 
+    // if (argv._[1]) level = argv._[1];
+    if (argv.objCsvArray) level = argv.objCsvArray;
+    var l = level.split(",");
+
+    if (d) console.log(l);
+
     if (jsonx)
     {
-      
+      var o =new Object(); 
+      var i = 0;
+      l.forEach(el => {
+        
+        Object.entries(jsonObject).forEach(entry => {
+            const [key, value] = entry;
+            if (el == key)
+            {
+              //output json
+              var json = JSON.stringify(value);
+              console.log(json);
+              o[key] =value; 
+              i++;
+            }
+          });
+      });
+      // var json = JSON.stringify(o);
+      // console.log(json);
       exit();
     }
 
 
     if (d) console.log(jsonObject.PublicIp)
 
-    // if (argv._[1]) level = argv._[1];
-    if (argv.objCsvArray) level = argv.objCsvArray;
     var out = [];
     var c = 0;
     Object.entries(jsonObject).forEach(entry => {
@@ -229,8 +251,6 @@ function main(rawdata) {
       var t = typeof (value);
       if (d) console.log(t);
 
-      var l = level.split(",");
-      if (d) console.log(l);
       // console.log(level);
       // exit();
 
