@@ -9,15 +9,52 @@ const fs = require('fs');
 
 var args = process.argv.slice(2);
 
-//add --help as first args if no argument is given
-if (!args || args.length == 0 || args[0] == "--help")
-  process.argv[2] = "--help";
+//add --help as first args if no argument is given and we are not in a pipeline
+var pipeMode = process.stdin._readableState.sync;
+//process.stdin.isTTY || process.stdin.isTTY==false? true:false;
+//console.log(pipeMode);
+if ((!args || args.length == 0 || args[0] == "--help") 
+&& pipeMode  == false)
+process.argv[2] = "--help";
 
 
+var { argv, exit } = require('process');
+
+//console.log(process.argv)
+
+//todo insert "-" as argv[2] if not that value
+if (pipeMode)
+{
+  var al = process.argv.length;// console.log(al);
+  if (al> 2)
+  {
+    var rearg  =[];
+    var ii = 0;
+    for (let i = 0; i < process.argv.length; i++) {
+      const element = process.argv[i];
+      var tst = element;
+      if (i==2 && tst != "-") //insert "-" at pos 2 of the argv
+      {
+        rearg[ii] = "-";
+        ii++;
+      }
+      rearg[ii] = tst; 
+      ii++;
+    }
+    process.argv = rearg;
+  }
+  else process.argv[2] = "-";
+}
+
+//console.log(process.argv)
+//exit();
 
 const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
 
+//if (d)console.log("------------------------")
+//if (d)console.log( process.stdin);
+//if (d)console.log("------------------------")
 
 
 var appStartMessage =
@@ -25,19 +62,19 @@ var appStartMessage =
 json2bash
 By Guillaume Descoteaux-Isabelle, 2022 
 ----------------------------------------`;
-var { argv, exit } = require('process');
 // const { exit } = require("node-process");
 const helpExample = `  `;
 
 argv =
-  yargs(hideBin(process.argv))
-    
+yargs(hideBin(process.argv))
+
     .scriptName("json2bash")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [objCsvArray] [fileout]',"run the thing",(yargs) => {
+    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "run the thing", (yargs) => {
       yargs.positional('jsonFile', {
         describe: 'json File input',
-        type: 'string'
+        type: 'string',
+        default: '-'
       }),
       yargs.positional('objCsvArray', {
         describe: 'object to extract in the file as csv',
@@ -51,11 +88,11 @@ argv =
       })
     })
     .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
-
+    
     .option('var2Lower', {
       default: false,
       type: 'boolean',
-      alias: ['tolower','tl', 'toLowerCase', 't', 'lc'],
+      alias: ['tolower', 'tl', 'toLowerCase', 't', 'lc'],
       description: 'Changes env name to lowercase'
     })
     .option('prefix', {
@@ -64,8 +101,20 @@ argv =
       type: 'boolean',
       description: 'prefix selected object output to var'
     })
+    .option('all', {
+      alias: ['a'],
+      default: false,
+      type: 'boolean',
+      description: 'output all sub object'
+    })
+    .option('jsonx', {
+      alias: ['j','jx'],
+      default: false,
+      type: 'boolean',
+      description: 'output sub object as json'
+    })
     .option('onlyselected', {
-      alias: ['o', 'os', 'oa','os','only'],
+      alias: ['o', 'os', 'oa', 'os', 'only'],
       default: false,
       type: 'boolean',
       description: 'select only value of obj array as arg 2'
@@ -88,119 +137,164 @@ argv =
     .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
     .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
     .argv;
+    
+    //-----------
+    
+    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all,jsonx } = argv;
+    var d = debug;
 
-//-----------
-
-var {var2Lower,prefix,onlyselected,fileout,debug,verbose} = argv;
-var d = debug;
-
-//var fileout = argv.fileout? argv.fileout: null;
-var noFileOut = fileout == null;
-if (d) console.log(fileout,noFileOut);
+    if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
+    
+    //var fileout = argv.fileout? argv.fileout: null;
+    var noFileOut = fileout == null;
+    if (d) console.log(fileout, noFileOut);
 var config = null;
 
 
 if (d) console.log(argv);
 
+//Possible later support for .env preconf 
 try {
   var tst = require('dotenv').config()
   if (tst.parsed) {
     config = new Object()
     var { json2bashtofile, json2bashtofilepath } = tst.parsed;
-  }} catch (error) { }
-
-
-try {
-
-  if (d) console.log(argv);
-
-  var filein = argv.jsonFile //argv._[0];
-  var level = "";
+  }
+} catch (error) { }
 
 
 
-  let rawdata = fs.readFileSync(filein);
-  let jsonObject = JSON.parse(rawdata);
+if (argv.jsonFile != "-")
+  try {
+    var filein = argv.jsonFile //argv._[0];
+    let rawdata = fs.readFileSync(filein);
+    main(rawdata);
 
-  if (d) console.log(jsonObject.PublicIp)
+  } catch (error) {
+    console.log("Error reading input file.")
+    console.log(error)
+  }
+else try {
+  //read STDIn
 
-  // if (argv._[1]) level = argv._[1];
-  if (argv.objCsvArray) level = argv.objCsvArray;
-  var out = [];
+  const stdin = process.stdin;
+  let rawdata = '';
+
+  stdin.setEncoding('utf8');
+
+  stdin.on('data', function (chunk) {
+    rawdata += chunk;
+  });
   var c = 0;
-  Object.entries(jsonObject).forEach(entry => {
-    const [key, value] = entry;
-    var outKey = key;
-
-
-    var t = typeof (value);
-    if (d) console.log(t);
-
-    var l = level.split(",");
-    if (d) console.log(l);
-    // console.log(level);
-    // exit();
-
-    if (t != "object") {
-      if (d) console.log(key.trim(), "=", value.trim());
-      if (var2Lower) outKey = key.toLowerCase();
-
-      if (!onlyselected)
-        out[c] = "export " + outKey + "=\"" + value.trim() + "\"";
-    }
-    else {
-      if (d) console.log("Special parsing, we have an objcet")
-      l.forEach(kl => {
-        //console.log(kl);
-        if (key == kl) {
-          if (d) console.log(key, ":", kl);
-          var prefixKey = kl;
-          
-          var o = parseObject2Bash(value, kl, noFileOut);
-          if (o ) {
-           if (verbose) console.log("Fileout activated")
-            o.forEach(oelem => {
-              out[c] = oelem;
-              c++;
-            });
-          }
-        }
-      });
-
-    }
+  stdin.on('end', function () {
+    //  console.log(c,":Hello " + rawdata);
+    main(rawdata);
     c++;
   });
-  if (d) console.log("-------------")
-  if (d) console.log(out)
 
-  var content = "";
-  out.forEach(element => {
-    //            Output to console 
-    if (noFileOut)
-      console.log(element)
-      //            or create a content to write to file
-    else content += element +"\n";
-  });
-
-  if (!noFileOut) {
-    console.log("Writting file:",fileout);        
-    try {
-      fs.writeFileSync(fileout, content);
-      //file written successfully
-    } catch (err) {
-      console.log("Error writing file:",fileout);
-      console.error(err)
-    }
-
-  }
-
+  stdin.on('error', console.error);
 
 } catch (error) {
-  console.log("Must specify a file as first args")
-  console.log(error)
 
 }
 
+function main(rawdata) {
+
+  try {
+
+
+    var level = "";
+
+    let jsonObject = JSON.parse(rawdata);
+
+    if (jsonx)
+    {
+      
+      exit();
+    }
+
+
+    if (d) console.log(jsonObject.PublicIp)
+
+    // if (argv._[1]) level = argv._[1];
+    if (argv.objCsvArray) level = argv.objCsvArray;
+    var out = [];
+    var c = 0;
+    Object.entries(jsonObject).forEach(entry => {
+      const [key, value] = entry;
+      var outKey = key;
+      if (var2Lower) outKey = key.toLowerCase();
+
+
+      var t = typeof (value);
+      if (d) console.log(t);
+
+      var l = level.split(",");
+      if (d) console.log(l);
+      // console.log(level);
+      // exit();
+
+      if (t != "object") {
+        if (d) console.log(key.trim(), "=", value.trim());
+
+        if (!onlyselected)
+          out[c] = "export " + outKey + "=\"" + value.trim() + "\"";
+      }
+      else {
+        if (d) console.log("Special parsing, we have an objcet")
+        l.forEach(kl => {
+          //console.log(kl);
+          if (key == kl || all) {
+            if (d) console.log(key, ":", kl);
+            var prefixKey = kl;
+            if (kl==".")prefixKey = key;
+
+            var o = parseObject2Bash(value, prefixKey, noFileOut,all);
+            if (o) {
+              if (verbose) console.log("Fileout activated")
+              o.forEach(oelem => {
+                out[c] = oelem;
+                c++;
+              });
+            }
+          }
+        });
+
+      }
+      c++;
+    });
+    if (d) console.log("-------------")
+    if (d) console.log(out)
+
+    var content = "";
+    out.forEach(element => {
+      //            Output to console 
+      if (noFileOut)
+        console.log(element)
+      //            or create a content to write to file
+      else content += element + "\n";
+    });
+
+    if (!noFileOut) {
+      console.log("Writting file:", fileout);
+      try {
+        fs.writeFileSync(fileout, content);
+        //file written successfully
+      } catch (err) {
+        console.log("Error writing file:", fileout);
+        console.error(err)
+      }
+
+    }
+
+
+  } catch (error) {
+    console.log("Must specify a file as first args")
+    console.log(error)
+
+  }
+
+}
 
 
 
@@ -213,7 +307,7 @@ try {
  * @param {*} outputToStdOut 
  * @returns 
  */
-function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false) {
+function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,outputAll=false) {
 
   if (d) console.log("olevel:", oLevelName);
   if (d) console.log(jsonObject);
@@ -234,15 +328,29 @@ function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false) {
     var prefixVal = "";
 
     if (prefix) prefixVal = oLevelName;
+    var envKeyName = prefixVal + outKey;
 
+    //value to output
     if (t != "object") {
       var v = "" + value;
 
       out[i] = "export "
-        + prefixVal
-        + outKey
+        + envKeyName
         + "=\""
         + v.replace(/(?:\r\n|\r|\n)/g, '\\n') + "\"";
+    }
+    else {
+      //We have an object
+      if(outputAll)
+      {
+        var o2 = parseObject2Bash(value,envKeyName,outputToStdOut,outputAll);
+        
+        //add result to output
+        o2.forEach(e2 => {
+          out[i] = e2;
+          i++;
+        });
+      }
     }
 
     i++;
@@ -251,6 +359,26 @@ function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false) {
     out.forEach(element => {
       console.log(element)
     });
-  else 
-   return out;
+  else
+    return out;
+}
+
+
+function getObjArray(jsonObject)
+{
+  
+  Object.entries(jsonObject).forEach(entry => {
+    const [key, value] = entry;
+
+
+    var t = typeof (value);  
+    var r = "";
+
+    //value to output
+    if (t == "object") {
+      r+= key
+    }
+    
+    i++;
+  });
 }
