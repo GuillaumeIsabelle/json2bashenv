@@ -107,6 +107,12 @@ yargs(hideBin(process.argv))
       type: 'boolean',
       description: 'output all sub object'
     })
+    .option('exportprefix', {
+      alias: ['x','export'],
+      default: false,
+      type: 'boolean',
+      description: 'output with export before'
+    })
     .option('jsonx', {
       alias: ['j','jx'],
       default: false,
@@ -141,7 +147,7 @@ yargs(hideBin(process.argv))
     
     //-----------
     
-    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all,jsonx } = argv;
+    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
     var d = debug;
 
     if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
@@ -257,8 +263,11 @@ function main(rawdata) {
       if (t != "object") {
         if (d) console.log(key.trim(), "=", value.trim());
 
+        var exportprefixVal = "";
+        if (exportprefix) exportprefixVal = "export ";
+
         if (!onlyselected)
-          out[c] = "export " + outKey + "=\"" + value.trim() + "\"";
+          out[c] = exportprefixVal + outKey + "=\"" + value.trim() + "\"";
       }
       else {
         if (d) console.log("Special parsing, we have an objcet")
