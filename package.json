@@ -4,7 +4,8 @@
   "description": "A CLI to export json object to bash env",
   "main": "json2bash.js",
   "scripts": {
-    "test": "node json2bash.js sample.json"
+    "test": "node json2bash.js sample.json",
+    "test2": "node json2bash.js samplelevel.json result"
   },
   "bin": {
     "json2bash": "json2bash.js"
