@@ -1,0 +1,14 @@
+{
+	"info":"subobject",
+	"result":{
+		"PublicIp": "3.99.112.115",
+		"AllocationId": "eipalloc-01bf0b8200476ef0d",
+		"PublicIpv4Pool": "amazon",
+		"NetworkBorderGroup": "ca-central-1",
+		"Domain": "vpc"
+	},
+	"stuff":{
+		"id":23,
+		"note":"my note about something\nwith a line"
+	}
+}

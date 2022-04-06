@@ -92,7 +92,7 @@ yargs(hideBin(process.argv))
     .option('var2Lower', {
       default: false,
       type: 'boolean',
-      alias: ['tolower', 'tl', 'toLowerCase', 'lc','l'],
+      alias: ['tolower', 'tl', 'toLowerCase', 't', 'lc'],
       description: 'Changes env name to lowercase'
     })
     .option('prefix', {
@@ -106,12 +106,6 @@ yargs(hideBin(process.argv))
       default: false,
       type: 'boolean',
       description: 'output all sub object'
-    })
-    .option('jsonx', {
-      alias: ['j','jx'],
-      default: false,
-      type: 'boolean',
-      description: 'output sub object as json'
     })
     .option('onlyselected', {
       alias: ['o', 'os', 'oa', 'os', 'only'],
@@ -136,12 +130,11 @@ yargs(hideBin(process.argv))
     .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
     .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
     .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
-    .example("./json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
     .argv;
     
     //-----------
     
-    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all,jsonx } = argv;
+    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all } = argv;
     var d = debug;
 
     if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
@@ -150,6 +143,9 @@ yargs(hideBin(process.argv))
     var noFileOut = fileout == null;
     if (d) console.log(fileout, noFileOut);
 var config = null;
+
+
+
 
 
 if (d) console.log(argv);
@@ -202,40 +198,26 @@ else try {
 function main(rawdata) {
 
   try {
-
-
-    var level = "";
-
+    
+    
     let jsonObject = JSON.parse(rawdata);
 
-    // if (argv._[1]) level = argv._[1];
-    if (argv.objCsvArray) level = argv.objCsvArray;
-    var l = level.split(",");
+    //l
+    var level = argv.objCsvArray;
+    console.log(level);
+    var l = [];
+    if (level == "." && all ){
+        if (d)console.log("DO BUILD THE ARRAY RECURSIVE READ THE OBJECTS");
+        level = getObjArray(jsonObject);
+      }
+      if (level)
+      l = level.split(",");
 
-    if (d) console.log(l);
-
-    if (jsonx)
-    {
-      var o =new Object(); 
-      var i = 0;
-      l.forEach(el => {
-        
-        Object.entries(jsonObject).forEach(entry => {
-            const [key, value] = entry;
-            if (el == key)
-            {
-              //output json
-              var json = JSON.stringify(value);
-              console.log(json);
-              o[key] =value; 
-              i++;
-            }
-          });
-      });
-      // var json = JSON.stringify(o);
-      // console.log(json);
-      exit();
-    }
+      d=true;
+   if (d) console.log("level:",level);
+   if (d) console.log("l:",l);
+   d=false;
+ //exit();
 
 
     if (d) console.log(jsonObject.PublicIp)
@@ -251,6 +233,7 @@ function main(rawdata) {
       var t = typeof (value);
       if (d) console.log(t);
 
+      if (d) console.log(l);
       // console.log(level);
       // exit();
 
@@ -327,7 +310,7 @@ function main(rawdata) {
  * @param {*} outputToStdOut 
  * @returns 
  */
-function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,outputAll=false) {
+function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,outputAll=false,oLevelNameOVerride="") {
 
   if (d) console.log("olevel:", oLevelName);
   if (d) console.log(jsonObject);
@@ -348,6 +331,8 @@ function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,ou
     var prefixVal = "";
 
     if (prefix) prefixVal = oLevelName;
+    if (prefix && oLevelNameOVerride != "") prefixVal = oLevelNameOVerride;
+
     var envKeyName = prefixVal + outKey;
 
     //value to output
@@ -361,11 +346,14 @@ function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,ou
     }
     else {
       //We have an object
+      console.log("value:",value," outKey:",outKey," keyname:",envKeyName);
       if(outputAll)
       {
-        var o2 = parseObject2Bash(value,envKeyName,outputToStdOut,outputAll);
+        var o2 = parseObject2Bash(value,outKey,outputToStdOut,outputAll,envKeyName);
         
         //add result to output
+       // console.log("o2:",o2);
+        if (o2)
         o2.forEach(e2 => {
           out[i] = e2;
           i++;
@@ -386,19 +374,37 @@ function parseObject2Bash(jsonObject, oLevelName = "", outputToStdOut = false,ou
 
 function getObjArray(jsonObject)
 {
-  
+  var i = 0, ii=0;
+  var r = "";
+  var o = [];
   Object.entries(jsonObject).forEach(entry => {
-    const [key, value] = entry;
-
-
+    const [key, value] = entry;   
+    
     var t = typeof (value);  
-    var r = "";
-
+    
     //value to output
     if (t == "object") {
-      r+= key
+      o[ii] = key;
+      ii++;
+
+     if (d) console.log("k:",key);
+     // var addon = key + ",";
+     // r = r+ addon;
     }
     
     i++;
   });
+  if (d)console.log("Made array for --all:",o);
+  i=0;
+  o.forEach(element => {
+    //const [key, value] = element;   
+    
+    var addon = element ;
+    if (i < o.length-1)
+       addon = element+ ",";
+    r = r+ addon;
+    i++;
+  });
+  if (d) console.log("Made string:",r);
+  return r;
 }
