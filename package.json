@@ -1,0 +1,32 @@
+{
+  "name": "json2bash",
+  "version": "0.0.1",
+  "description": "A CLI to export json object to bash env",
+  "main": "json2bash.js",
+  "scripts": {
+    "test": "node json2bash.js sample.json",
+   "postpublish": "node postpublish.js"
+  },
+  "bin": {
+    "json2bash": "json2bash.js"   
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:GuillaumeIsabelle/json2bashenv.git"
+  },
+  "keywords": [
+    "json",
+    "bash",
+    "env"
+  ],
+  "author": "Guillaume Descoteaux-Isabelle",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GuillaumeIsabelle/json2bashenv/issues"
+  },
+  "homepage": "https://github.com/GuillaumeIsabelle/json2bashenv#readme",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+   "yargs": "^16.2.0"
+  }
+}
