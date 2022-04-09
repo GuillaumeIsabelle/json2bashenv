@@ -1,6 +1,9 @@
 # json2bashenv
 json2bashenv
 
+## Note about usage and future direction.
+
+After coding version 0.2.* I discovered [**@code_monk/json2bash**](https://www.npmjs.com/package/@code_monk/json2bash).  Ya someone has done a much better foundation to code what I really want (and is still planned in 0.3).  Well, codemonk's support multiple sub-level in the JSON (which, I tell you, I wont code and reinvent the wheel ;) ).  So for now, consider using their if that here does not do what you want. 
 
 ## Install
 

@@ -1,0 +1,15 @@
+{
+  "name": "eval-codemonk_json2bash",
+  "version": "1.0.0",
+  "description": "npm i @code_monk/json2bash",
+  "main": "test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@code_monk/json2bash": "^1.1.1"
+  }
+}
