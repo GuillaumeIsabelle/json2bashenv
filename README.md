@@ -9,6 +9,7 @@ After coding version 0.2.* I discovered [**@code_monk/json2bash**](https://www.n
 
 ```sh
 npm install json2bash --g
+
 ```
 
 ## Usage
