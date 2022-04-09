@@ -1,0 +1,23 @@
+#!/usr/bin/env node --harmony
+
+/**
+ * this small file simply calls json2bash and outputs.
+ * you would evaluate it from another scripts.
+ * see some_bash_script.sh
+ **/
+
+const json2bash = require('./index.js');
+const json = require('./package.json');
+
+//  this is optional. all keys are also optional
+const json2bashOptions = {
+    "quote_character": "\'",
+    "omit_variable_names_beginning_with_underscore": true,
+    "disallow_two_underscores_in_a_row": true,
+    "replace_illegal_chars_with": '',
+    "arrays_become": String
+};
+
+console.log(
+    json2bash(json,'FOO',json2bashOptions).export()
+);
