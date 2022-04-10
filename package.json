@@ -1,6 +1,6 @@
 {
   "name": "json2bash",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "A CLI to export json object to bash env",
   "main": "json2bash.js",
   "scripts": {
