@@ -1,11 +1,11 @@
 {
 	"info": "subobject",
-	"result": {
+	"Result": {
 		"PublicIp": "3.99.112.115",
 		"AllocationId": "eipalloc-01bf0b8200476ef0d",
 		"PublicIpv4Pool": "amazon",
 		"NetworkBorderGroup": "ca-central-1",
-		"Domain": "vpc",
+		"Domain": "Vpc",
 		"meta": {
 			"mid": 44,
 			"code": "somecode",

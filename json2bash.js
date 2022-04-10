@@ -64,15 +64,14 @@ By Guillaume Descoteaux-Isabelle, 2022
 ----------------------------------------`;
 // const { exit } = require("node-process");
 const helpExample = `  `;
-
+var author = "Guillaume Descoteaux-Isabelle";
 argv =
 yargs(hideBin(process.argv))
-
     .scriptName("json2bash")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "run the thing", (yargs) => {
+    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "by " + author + ", 2022", (yargs) => {
       yargs.positional('jsonFile', {
-        describe: 'json File input',
+        describe: 'json File input (optional when receiving using pipe)',
         type: 'string',
         default: '-'
       }),
@@ -86,14 +85,29 @@ yargs(hideBin(process.argv))
         type: 'string',
         default: null
       })
-    })
+    .example("json2bash sample.json --tolower", "simple output")
+    .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
+    .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
+    .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
+    .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
+    .example("json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
+    .example("json2bash samplesublevel.json o.txt --all ", "export all sublevel to a file o.txt")
+    .example("json2bash samplesublevel.json o.txt --all --u", "export all sublevel in upper case to a file o.txt")
     .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
+    .help()
+    })
     
     .option('var2Lower', {
       default: false,
       type: 'boolean',
       alias: ['tolower', 'tl', 'toLowerCase', 'lc','l'],
       description: 'Changes env name to lowercase'
+    })
+    .option('var2Cap', {
+      default: false,
+      type: 'boolean',
+      alias: ['tocap', 'tc', 'toUpperCase', 'uc','u'],
+      description: 'Changes env name to uppercase'
     })
     .option('prefix', {
       alias: ['p', 'px'],
@@ -137,17 +151,20 @@ yargs(hideBin(process.argv))
       type: 'boolean',
       description: 'Run with debug output'
     })
-    .example("json2bash sample.json --tolower", "simple output")
-    .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
-    .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
-    .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
-    .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
-    .example("./json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
+    
     .argv;
     
     //-----------
     
-    var { var2Lower, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
+    var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
+    
+    //var CASE output
+    if (var2Lower && var2Cap) {console.error("Cant't use both low and cap option"); exit(2);}
+    var varCase = "ori";
+    if (var2Lower) varCase = "low";
+    else if (var2Cap) varCase = "cap";
+
+
     var d = debug;
 
     if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
@@ -209,24 +226,32 @@ function main(rawdata) {
 
   try {
 
+    if (all) {
+      if (fileout==null && argv.objCsvArray != ".") fileout= argv.objCsvArray;
 
-    var level = "";
+      //var jsonStringyfied = JSON.stringify(rawdata);
+      var content = code_monk__json2bashV2Content(rawdata,prefix,varCase,fileout==null);
+      writeMainResults(content) ;
+    }
+    else {
 
-    let jsonObject = JSON.parse(rawdata);
-
-    // if (argv._[1]) level = argv._[1];
-    if (argv.objCsvArray) level = argv.objCsvArray;
-    var l = level.split(",");
-
-    if (d) console.log(l);
-
-    if (jsonx)
-    {
-      var o =new Object(); 
-      var i = 0;
-      l.forEach(el => {
-        
-        Object.entries(jsonObject).forEach(entry => {
+      var level = "";
+      
+      let jsonObject = JSON.parse(rawdata);
+      
+      // if (argv._[1]) level = argv._[1];
+      if (argv.objCsvArray) level = argv.objCsvArray;
+      var l = level.split(",");
+      
+      if (d) console.log(l);
+      
+      if (jsonx)
+      {
+        var o =new Object(); 
+        var i = 0;
+        l.forEach(el => {
+          
+          Object.entries(jsonObject).forEach(entry => {
             const [key, value] = entry;
             if (el == key)
             {
@@ -237,96 +262,102 @@ function main(rawdata) {
               i++;
             }
           });
-      });
-      // var json = JSON.stringify(o);
-      // console.log(json);
-      exit();
-    }
-
-
-    if (d) console.log(jsonObject.PublicIp)
-
-    var out = [];
-    var c = 0;
-    Object.entries(jsonObject).forEach(entry => {
-      const [key, value] = entry;
-      var outKey = key;
-      if (var2Lower) outKey = key.toLowerCase();
-
-
-      var t = typeof (value);
-      if (d) console.log(t);
-
-      // console.log(level);
-      // exit();
-
-      if (t != "object") {
-        if (d) console.log(key.trim(), "=", value.trim());
-
-        var exportprefixVal = "";
-        if (exportprefix) exportprefixVal = "export ";
-
-        if (!onlyselected)
-          out[c] = exportprefixVal + outKey + "=\"" + value.trim() + "\"";
-      }
-      else {
-        if (d) console.log("Special parsing, we have an objcet")
-        l.forEach(kl => {
-          //console.log(kl);
-          if (key == kl || all) {
-            if (d) console.log(key, ":", kl);
-            var prefixKey = kl;
-            if (kl==".")prefixKey = key;
-
-            var o = parseObject2Bash(value, prefixKey, noFileOut,all);
-            if (o) {
-              if (verbose) console.log("Fileout activated")
-              o.forEach(oelem => {
-                out[c] = oelem;
-                c++;
-              });
-            }
-          }
         });
-
+        // var json = JSON.stringify(o);
+        // console.log(json);
+        exit();
       }
-      c++;
-    });
-    if (d) console.log("-------------")
-    if (d) console.log(out)
+      
+      
+      if (d) console.log(jsonObject.PublicIp)
+      
+      var out = [];
+      var c = 0;
+      Object.entries(jsonObject).forEach(entry => {
+        const [key, value] = entry;
+        var outKey = key;
+        if (var2Lower) outKey = key.toLowerCase();
+        
+        
+        var t = typeof (value);
+        if (d) console.log(t);
+        
+        // console.log(level);
+        // exit();
+        
+        if (t != "object") {
+          if (d) console.log(key.trim(), "=", value.trim());
+          
+          var exportprefixVal = "";
+          if (exportprefix) exportprefixVal = "export ";
+          
+          if (!onlyselected)
+          out[c] = exportprefixVal + outKey + "=\"" + value.trim() + "\"";
+        }
+        else {
+          if (d) console.log("Special parsing, we have an objcet")
+          l.forEach(kl => {
+            //console.log(kl);
+            if (key == kl || all) {
+              if (d) console.log(key, ":", kl);
+              var prefixKey = kl;
+              if (kl==".")prefixKey = key;
+              
+              var o = parseObject2Bash(value, prefixKey, noFileOut,all);
+              if (o) {
+                if (verbose) console.log("Fileout activated")
+                o.forEach(oelem => {
+                  out[c] = oelem;
+                  c++;
+                });
+              }
+            }
+          });
 
-    var content = "";
-    out.forEach(element => {
-      //            Output to console 
-      if (noFileOut)
+        }
+        c++;
+      });
+      if (d) console.log("-------------")
+      if (d) console.log(out)
+      
+      var content = "";
+      out.forEach(element => {
+        //            Output to console 
+        if (noFileOut)
         console.log(element)
-      //            or create a content to write to file
-      else content += element + "\n";
-    });
-
-    if (!noFileOut) {
-      console.log("Writting file:", fileout);
-      try {
-        fs.writeFileSync(fileout, content);
-        //file written successfully
-      } catch (err) {
-        console.log("Error writing file:", fileout);
-        console.error(err)
+        //            or create a content to write to file
+        else content += element + "\n";
+      });
+      
+      if (!noFileOut) {
+        console.log("Writting file:", fileout);
+        writeMainResults(content);
+        
+        
       }
-
-    }
-
-
+  }
+    
+    
   } catch (error) {
     console.log("Must specify a file as first args")
     console.log(error)
-
+    
   }
-
+  
 }
 
 
 
+
+function writeMainResults(content) {
+  try {
+    fs.writeFileSync(fileout, content);
+    //file written successfully
+  } catch (err) {
+    console.log("Error writing file:", fileout);
+    console.error(err)
+  }
+}
 
 /**
  *  Parse object 2 bash function
@@ -410,4 +441,59 @@ function getObjArray(jsonObject)
     
     i++;
   });
+}
+
+
+
+
+/**
+ * code_monk__json2bashV2
+ * 
+ * @param {*} jsonpath 
+ * @param {*} outprefix 
+ * @param {*} varcase 
+ * @param {*} printstdout 
+ * @returns 
+ */
+function code_monk__json2bashV2(jsonpath, outprefix = "", varcase="original",printstdout=true) {
+  const _json = require(jsonpath);
+  return code_monk__json2bashV2Content(_json,outprefix,varcase,printstdout);
+}
+
+/**
+ * code_monk__json2bashV2Content
+ * 
+ * @param {*} jsondata 
+ * @param {*} outprefix 
+ * @param {*} varcase 
+ * @param {*} printstdout 
+ * @returns 
+ */
+function code_monk__json2bashV2Content(jsondata, outprefix = "", varcase="original",printstdout=true) {
+
+  let jsonObject = jsondata;
+ // let jsonStringyfied = jsondata;
+  try { //try to convert raw data, otherwise all is fine    
+    jsonObject = JSON.parse(jsondata);
+    //jsonStringyfied = JSON.stringify(jsonObject);
+  } catch (error) {  }
+ //console.log(jsonObject);
+	const _json2bash = require('./repo_code_monk/index');
+	
+  
+  const options ={
+    quote_character: "\'",
+    omit_variable_names_beginning_with_underscore: true,
+    disallow_two_underscores_in_a_row: true,
+    replace_illegal_chars_with: '',
+    arrays_become: String,
+    posix_mode: false, 
+    quote_character: "\'",
+    varcase: varcase 
+  };
+	var _r = _json2bash(jsonObject, outprefix,options);
+	var _txt = 	_r.export();
+  if (printstdout)
+	console.log(_txt	);
+  return _txt;
 }
