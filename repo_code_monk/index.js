@@ -9,7 +9,8 @@ const defaults = {
     "disallow_two_underscores_in_a_row": true,
     "replace_illegal_chars_with": '',
     "arrays_become": String,
-    "posix_mode": false
+    "posix_mode": false,
+    "varcase":"ori"
 };
 
 const bashify = (keybits,k,v,opts) => {
@@ -32,13 +33,30 @@ const bashify = (keybits,k,v,opts) => {
 
     //  glue together deep arrays with underscores.
     //  convert seperator-like chars to underscores
+    
     const normalize = (arrayOfKeys) => {
-        return arrayOfKeys.join('_').toUpperCase().replace(/[\-\s]+/g,'_');
+        switch (opts.varcase) {
+            case "lower":
+            case "low":
+            case "l":
+                    return arrayOfKeys.join('_').toLowerCase().replace(/[\-\s]+/g,'_');
+                break;
+            case "original":
+            case "ori":
+            case "o":
+                    return arrayOfKeys.join('_').replace(/[\-\s]+/g,'_');
+                break;
+        
+            default:
+                    return arrayOfKeys.join('_').toUpperCase().replace(/[\-\s]+/g,'_');
+                break;
+        }
+    
     };
 
     const escapeChars = (str) => {
         let pat = new RegExp(opts.quote_character,'gi');
-        return str.replace(pat,'\\$&');
+        return str.replace(pat,'\\$&').replace(/(?:\r\n|\r|\n)/g, '\\n') ;
     };
 
     const shellExpand = (str) => {
