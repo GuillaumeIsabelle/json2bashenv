@@ -37,6 +37,9 @@ json2bash samplelevel.json "result,stuff" --tolower --prefix
 
 ```sh
 jsonarr2csv sample-jsonarr2csv.json >out.csv
+
+#rename the index header
+jsonarr2csv sample-jsonarr2csv.json myindexname  >out.csv
 ```
 
 ## Complex Usage: 
