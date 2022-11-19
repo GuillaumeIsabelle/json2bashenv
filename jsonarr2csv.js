@@ -82,7 +82,7 @@ yargs(hideBin(process.argv))
       yargs.positional('idxname', {
         describe: 'index name in the file as csv',
         type: 'string',
-        default: 'idx'
+        default: 'null'
       }),
       yargs.positional('fileout', {
         describe: 'env file output',
@@ -95,6 +95,12 @@ yargs(hideBin(process.argv))
     .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/jsonarr2csvenv#readme')
     .help()
     })    
+    .option('numberedindex', {
+      alias: 'n',
+      default: false,
+      type: 'boolean',
+      description: 'add index column numbered'
+    })
     .option('verbose', {
       alias: 'v',
       default: false,
@@ -112,9 +118,10 @@ yargs(hideBin(process.argv))
     
     //-----------
     
-    var { idxname, fileout, debug, verbose } = argv;
+var { idxname,numberedindex, fileout, debug, verbose } = argv;
     
-
+if (idxname != "null") numberedindex = true;
+if (numberedindex==true && idxname=="null")idxname = "idx";
 
 
 
@@ -194,7 +201,9 @@ function getCSVLinesPTO(data) {
       max++;
     }
     var c = 0;
-    ls += key + ",";
+    var _prestringIndex = key + ",";
+    if (!numberedindex) _prestringIndex = "";
+    ls += _prestringIndex;
 
     for (const [key2, value2] of Object.entries(value)) {
       if (key == 1) {
@@ -216,7 +225,9 @@ function getCSVLinesPTO(data) {
     //ls += "\n";
     //if (key>1) break;
   }
-  return  idxname + ","+  h + "\n" + ls;
+  var _prestring = idxname + ",";
+  if (!numberedindex) _prestring = "";
+  return  _prestring+  h + "\n" + ls;
 }
 
 function getCSVHeader(data) {

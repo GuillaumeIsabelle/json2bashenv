@@ -36,10 +36,14 @@ json2bash samplelevel.json "result,stuff" --tolower --prefix
 ## JSON Array to CSV
 
 ```sh
+#default (has no index)
 jsonarr2csv sample-jsonarr2csv.json >out.csv
 
 #rename the index header
 jsonarr2csv sample-jsonarr2csv.json myindexname  >out.csv
+
+#with default index
+jsonarr2csv sample-jsonarr2csv.json -d  >out.csv
 ```
 
 ## Complex Usage: 
