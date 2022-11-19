@@ -223,4 +223,33 @@ else try {
 }
 
 function main(rawdata) {
+  var data = JSON.parse(rawdata);
+  var h= getCSVHeader(data);
+  console.log(h);
+  
+}
+
+function getCSVHeader(data) {
+  var h="";
+  var once = false;
+  for (const [key, value] of Object.entries(data)) {
+    //console.log(`${key}: ${value.oid}`);
+    var max = 0;
+    for (const [key2, value2] of Object.entries(value)) {
+      max++;
+    }
+    var c = 0;
+    for (const [key2, value2] of Object.entries(value)) {
+      if (key == 1) {
+        //console.log(`${key2}`);
+        var _l = "";
+        if (c < max - 1)
+          _l = ",";
+        h += key2 + _l;
+        once = true;
+      }
+      c++;
+    }
+  }
+  return  h;
 }
