@@ -59,7 +59,7 @@ const { hideBin } = require('yargs/helpers')
 
 var appStartMessage =
   `-------------------------
-json2bash
+jsonarr2csv
 By Guillaume Descoteaux-Isabelle, 2022 
 ----------------------------------------`;
 // const { exit } = require("node-process");
@@ -71,78 +71,30 @@ var author = "Guillaume Descoteaux-Isabelle";
 
 argv =
 yargs(hideBin(process.argv))
-    .scriptName("json2bash")
+    .scriptName("jsonarr2csv")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "by " + author + ", 2022", (yargs) => {
+    .usage('$0 <jsonFile> [idxname] [fileout]', "by " + author + ", 2022", (yargs) => {
       yargs.positional('jsonFile', {
         describe: 'json File input (optional when receiving using pipe)',
         type: 'string',
         default: '-'
       }),
-      yargs.positional('objCsvArray', {
-        describe: 'object to extract in the file as csv',
+      yargs.positional('idxname', {
+        describe: 'index name in the file as csv',
         type: 'string',
-        default: '.'
+        default: 'idx'
       }),
       yargs.positional('fileout', {
         describe: 'env file output',
         type: 'string',
         default: null
       })
-    .example("json2bash sample.json --tolower", "simple output")
-    .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
-    .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
-    .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
-    .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
-    .example("json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
-    .example("json2bash samplesublevel.json o.txt --all ", "export all sublevel to a file o.txt")
-    .example("json2bash samplesublevel.json o.txt --all --u", "export all sublevel in upper case to a file o.txt")
-    .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
+    .example("jsonarr2csv sample.json", "simple output to console")
+    .example("jsonarr2csv sample.json > outfile.csv", "simple output to file ")
+    .example("jsonarr2csv sample.json myindex > outfile.csv", "simple output to file renaming idx")
+    .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/jsonarr2csvenv#readme')
     .help()
-    })
-    
-    .option('var2Lower', {
-      default: false,
-      type: 'boolean',
-      alias: ['tolower', 'tl', 'toLowerCase', 'lc','l'],
-      description: 'Changes env name to lowercase'
-    })
-    .option('var2Cap', {
-      default: false,
-      type: 'boolean',
-      alias: ['tocap', 'tc', 'toUpperCase', 'uc','u'],
-      description: 'Changes env name to uppercase'
-    })
-    .option('prefix', {
-      alias: ['p', 'px'],
-      default: false,
-      type: 'boolean',
-      description: 'prefix selected object output to var'
-    })
-    .option('all', {
-      alias: ['a'],
-      default: false,
-      type: 'boolean',
-      description: 'output all sub object'
-    })
-    .option('exportprefix', {
-      alias: ['x','export'],
-      default: false,
-      type: 'boolean',
-      description: 'output with export before'
-    })
-    .option('jsonx', {
-      alias: ['j','jx'],
-      default: false,
-      type: 'boolean',
-      description: 'output sub object as json'
-    })
-    .option('onlyselected', {
-      alias: ['o', 'os', 'oa', 'os', 'only'],
-      default: false,
-      type: 'boolean',
-      description: 'select only value of obj array as arg 2'
-    })
+    })    
     .option('verbose', {
       alias: 'v',
       default: false,
@@ -160,7 +112,7 @@ yargs(hideBin(process.argv))
     
     //-----------
     
-    var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
+    var { idxname, fileout, debug, verbose } = argv;
     
 
 
@@ -173,7 +125,7 @@ try {
   var tst = require('dotenv').config()
   if (tst.parsed) {
     config = new Object()
-    var { json2bashtofile, json2bashtofilepath } = tst.parsed;
+    var { jsonarr2csvtofile, jsonarr2csvtofilepath } = tst.parsed;
   }
 } catch (error) { }
 
@@ -252,6 +204,8 @@ function getCSVLinesPTO(data) {
       max++;
     }
     var c = 0;
+    ls += key + ",";
+
     for (const [key2, value2] of Object.entries(value)) {
       if (key == 1) {
         //console.log(`${key2}`);
@@ -272,7 +226,7 @@ function getCSVLinesPTO(data) {
     //ls += "\n";
     //if (key>1) break;
   }
-  return  h + "\n" + ls;
+  return  idxname + ","+  h + "\n" + ls;
 }
 
 function getCSVHeader(data) {
