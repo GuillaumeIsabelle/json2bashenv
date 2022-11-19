@@ -183,16 +183,6 @@ function main(rawdata) {
   console.log(csvLines);
 }
 
-function getCSVLines(data) {
-  var l="";
-  for (const [key, value] of Object.entries(data)) {
-    var e = "";
-    for (const [key2, value2] of Object.entries(value)) {
-
-    }
-  }
-  return l;
-}
 function getCSVLinesPTO(data) {
   var h="";
   var ls="";
