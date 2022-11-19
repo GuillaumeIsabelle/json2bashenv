@@ -226,7 +226,53 @@ function main(rawdata) {
   var data = JSON.parse(rawdata);
   var h= getCSVHeader(data);
   console.log(h);
+ // var csvLines = getCSVLines(data);
+  var csvLines = getCSVLinesPTO(data);
+  console.log(csvLines);
+}
+
+function getCSVLines(data) {
+  var l="";
+  for (const [key, value] of Object.entries(data)) {
+    var e = "";
+    for (const [key2, value2] of Object.entries(value)) {
+
+    }
+  }
+  return l;
+}
+function getCSVLinesPTO(data) {
+  var h="";
+  var ls="";
+  var once = false;
+  for (const [key, value] of Object.entries(data)) {
+    //console.log(`${key}: ${value.oid}`);
+    var max = 0;
+    for (const [key2, value2] of Object.entries(value)) {
+      max++;
+    }
+    var c = 0;
+    for (const [key2, value2] of Object.entries(value)) {
+      if (key == 1) {
+        //console.log(`${key2}`);
+        var _s = "";
+        if (c < max - 1)
+          _s = ",";
+        h += key2 + _s;
+        once = true;
+      }    
+      var _s = "\n";
+      if (c < max - 1)
+        _s = ",";
+      ls += value2 + _s;
+      once = true;
   
+      c++;
+    }
+    //ls += "\n";
+    //if (key>1) break;
+  }
+  return  h + "\n" + ls;
 }
 
 function getCSVHeader(data) {
@@ -250,6 +296,7 @@ function getCSVHeader(data) {
       }
       c++;
     }
+    if (key>1) break;
   }
   return  h;
 }

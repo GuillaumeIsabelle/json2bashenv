@@ -1,14 +1,16 @@
 {
   "name": "json2bash",
   "version": "0.2.4",
-  "description": "A CLI to export json object to bash env",
+  "description": "A CLI to export json object to bash env.  Also  json array to csv",
   "main": "json2bash.js",
   "scripts": {
     "test": "node json2bash.js sample.json",
-    "test2": "node json2bash.js samplelevel.json result"
+    "test2": "node json2bash.js samplelevel.json result",
+    "test3":"node jsonarr2csv.js sample-jsononelevel.json"
   },
   "bin": {
-    "json2bash": "json2bash.js"
+    "json2bash": "json2bash.js",
+    "jsonarr2csv": "jsonarr2csv.js"
   },
   "repository": {
     "type": "git",
@@ -17,7 +19,8 @@
   "keywords": [
     "json",
     "bash",
-    "env"
+    "env",
+    "csv"
   ],
   "author": "Guillaume Descoteaux-Isabelle",
   "license": "MIT",

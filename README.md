@@ -33,6 +33,11 @@ json2bash samplelevel.json "result"  --tolower --oa --prefix
 json2bash samplelevel.json "result,stuff" --tolower --prefix         
 ```
 
+## JSON Array to CSV
+
+```sh
+jsonarr2csv sample-jsonarr2csv.json >out.csv
+```
 
 ## Complex Usage: 
 
