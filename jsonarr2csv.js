@@ -224,8 +224,8 @@ else try {
 
 function main(rawdata) {
   var data = JSON.parse(rawdata);
-  var h= getCSVHeader(data);
-  console.log(h);
+  //var h= getCSVHeader(data);
+  //console.log(h);
  // var csvLines = getCSVLines(data);
   var csvLines = getCSVLinesPTO(data);
   console.log(csvLines);
