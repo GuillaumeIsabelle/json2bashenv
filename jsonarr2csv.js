@@ -101,6 +101,12 @@ yargs(hideBin(process.argv))
       type: 'boolean',
       description: 'add index column numbered'
     })
+    .option('matchobj', {
+      alias: 'm',
+      default: false,
+      type: 'boolean',
+      description: 'insure matching fields using first object of array/object'
+    })
     .option('verbose', {
       alias: 'v',
       default: false,
@@ -118,7 +124,7 @@ yargs(hideBin(process.argv))
     
     //-----------
     
-var { idxname,numberedindex, fileout, debug, verbose } = argv;
+var { idxname,numberedindex, fileout, debug, verbose,matchobj } = argv;
     
 if (idxname != "null") numberedindex = true;
 if (numberedindex==true && idxname=="null")idxname = "idx";
@@ -190,7 +196,112 @@ function main(rawdata) {
   console.log(csvLines);
 }
 
+function getPropFromVarious(data){
+  var once = false;
+  var r = [];
+  var c = 0;
+  for (const [key, value] of Object.entries(data)) {
+    //console.log(`${key}: ${value.oid}`);
+    var max = 0;
+    for (const [key2, value2] of Object.entries(value)) {
+      r[key2] = "1";
+      max++;
+    }
+    if (c> 100)     once = true;
+    c++;
+    if (!once) break;
+  }
+  // var p = [];
+  // for (const [key, value] of Object.entries(r)) {
+
+  // }
+  return r;
+}
+
+function getEntriesAsHeaderCSV(rData)
+{
+  var h=""; var max = 0;
+  for (const [key2, value2] of Object.entries(rData)) {
+    max++;
+  }
+  var c=0;
+  for (const [pk, pv] of Object.entries(rData)) {   
+    var _s = "";
+    if (c < max - 1)
+      _s = ",";
+    h += pk + _s;
+    c++;
+   }
+   return h;
+}
+
+function createObjectFilled(rData,_defaultValue=null)
+{
+  var r= new Object();
+  for (const [key, value] of Object.entries(rData)) {
+    r[key]= _defaultValue;
+  }
+  return r;
+}
+
+
 function getCSVLinesPTO(data) {
+  var h="";
+  var ls="";
+  var once = false;
+  var r =new Object();
+  r= getPropFromVarious(data);
+  h= getEntriesAsHeaderCSV(r);
+  //console.log(h) 
+  var o2 = new Object();
+  var cl = 0;
+  o2= createObjectFilled(r);
+  for (const [pk, pv] of Object.entries(o2)) { cl++; } 
+  //console.log(cl);
+  //console.log(o2);
+  //return;
+  //return;
+  for (const [key, value] of Object.entries(data)) {
+    
+    var _prestringIndex = key + ",";
+    if (!numberedindex) _prestringIndex = "";
+    ls += _prestringIndex;
+    
+    var o = new Object();
+    o = createObjectFilled(r);
+    var c = 0;
+    var criss = "";
+    for (const [pk, pv] of Object.entries(o)) {
+
+      if(value.hasOwnProperty(pk))  
+      {
+        o[pk] = value[pk];
+      }  
+      //else  console.log("null data for prop:" + pk);
+
+     // criss += o[pk]+  ","
+      
+      var _s = "\n";
+      if (c < cl - 1)     _s = ",";
+      ls += o[pk] + _s;
+      
+      c++;
+    }
+   // console.log(criss);
+
+    
+    
+    //ls += "\n";
+    //if (key>1) break;
+  }
+  //  return;
+
+  var _prestring = idxname + ",";
+  if (!numberedindex) _prestring = "";
+  return  _prestring+     h + "\n" + ls;
+}
+
+function getCSVLinesPTOv1(data) {
   var h="";
   var ls="";
   var once = false;
