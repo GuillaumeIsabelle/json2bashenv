@@ -103,7 +103,7 @@ yargs(hideBin(process.argv))
     })
     .option('matchobj', {
       alias: 'm',
-      default: false,
+      default: true,
       type: 'boolean',
       description: 'insure matching fields using first object of array/object'
     })
@@ -192,7 +192,9 @@ function main(rawdata) {
   //var h= getCSVHeader(data);
   //console.log(h);
  // var csvLines = getCSVLines(data);
-  var csvLines = getCSVLinesPTO(data);
+  var csvLines ="";
+  if (matchobj)csvLines= getCSVLinesPTO(data);
+  else csvLines = getCSVLinesPTOv1(data);
   console.log(csvLines);
 }
 
