@@ -10,6 +10,8 @@
   },
   "bin": {
     "json2bash": "json2bash.js",
+    "json2bash1": "json2bashV1.js",
+    "json2bash3": "json2bashV3.js",
     "jsonarr2csv": "jsonarr2csv.js"
   },
   "repository": {
