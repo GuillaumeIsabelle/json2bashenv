@@ -187,7 +187,7 @@ try {
 
 
 
-if (argv.jsonFile != "-" || argv.jsonFile != "__pipe__")
+if (argv.jsonFile != "-" && argv.jsonFile != "__pipe__")
   try {
     var filein = argv.jsonFile //argv._[0];
     let rawdata = fs.readFileSync(filein);
