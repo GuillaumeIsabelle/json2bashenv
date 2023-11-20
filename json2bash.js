@@ -57,8 +57,7 @@ const { hideBin } = require('yargs/helpers')
 //if (d)console.log("------------------------")
 
 
-var appStartMessage =
-  `-------------------------
+var appStartMessage = `-------------------------
 json2bash
 By Guillaume Descoteaux-Isabelle, 2022 
 ----------------------------------------`;
@@ -188,7 +187,7 @@ try {
 
 
 
-if (argv.jsonFile != "-")
+if (argv.jsonFile != "-" || argv.jsonFile != "__pipe__")
   try {
     var filein = argv.jsonFile //argv._[0];
     let rawdata = fs.readFileSync(filein);
