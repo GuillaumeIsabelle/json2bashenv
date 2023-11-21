@@ -17,8 +17,8 @@ var tmpinputfile = args[0];
 
 var tmpoutfile = args[2] && path.extname(args[2]) === '.sh' ? args[2] : null;
 
-if (tmpoutfile == null) tmpoutfile = args[1] && path.extname(args[1]) === '.csv' ? args[1] : null;
-
+if (tmpoutfile == null ) 
+tmpoutfile = args[1] && path.extname(args[1]) === '.sh' ? args[1] : null;
 
 
 
