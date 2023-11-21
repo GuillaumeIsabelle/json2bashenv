@@ -59,7 +59,7 @@ const { hideBin } = require('yargs/helpers')
 
 var appStartMessage = `-------------------------
 json2bash
-By Guillaume Descoteaux-Isabelle, 2022 
+By Guillaume Descoteaux-Isabelle, 2023 
 ----------------------------------------`;
 // const { exit } = require("node-process");
 const helpExample = `  `;
@@ -68,11 +68,11 @@ argv =
 yargs(hideBin(process.argv))
     .scriptName("json2bash")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "by " + author + ", 2022", (yargs) => {
+    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "by " + author + ", 2023", (yargs) => {
       yargs.positional('jsonFile', {
         describe: 'json File input (optional when receiving using pipe)',
         type: 'string',
-        default: '-'
+        default: '__pipe__'
       }),
       yargs.positional('objCsvArray', {
         describe: 'object to extract in the file as csv',
@@ -200,19 +200,22 @@ if (argv.jsonFile != "-" && argv.jsonFile != "__pipe__")
 else try {
   //read STDIn
 
-  const stdin = process.stdin;
-  let rawdata = '';
+  process.stdin.setEncoding('utf8');
 
-  stdin.setEncoding('utf8');
+  let inputData = '';
 
-  stdin.on('data', function (chunk) {
-    rawdata += chunk;
+  process.stdin.on('readable', () => {
+    let chunk;
+    // Use a loop to make sure we read all available data.
+    while ((chunk = process.stdin.read()) !== null) {
+      inputData += chunk;
+    }
   });
-  var c = 0;
-  stdin.on('end', function () {
-    //  console.log(c,":Hello " + rawdata);
-    main(rawdata);
-    c++;
+
+  process.stdin.on('end', () => {
+    // Here, all of the data has been read.
+    //console.log(`Received data: ${inputData}`);
+    main(inputData);
   });
 
   stdin.on('error', console.error);
