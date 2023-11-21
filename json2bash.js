@@ -10,7 +10,7 @@ const fs = require('fs');
 
 var args = process.argv.slice(2);
 
-console.log("args 0,1:"+ args[0] + " " + args[1] + " ");
+
 var tmpfile = args[0];
 
 //add --help as first args if no argument is given and we are not in a pipeline
@@ -168,7 +168,6 @@ yargs(hideBin(process.argv))
 var config = null;
 
 
-console.log("argv: fileout:" + fileout);
 
 if (d) console.log(argv);
 
@@ -191,7 +190,7 @@ if (
     {
     if ( fs.existsSync(tmpfile)) {argv.jsonfile = tmpfile;}
   try {
-    console.log("reading..." + argv.jsonfile);
+    
     var filein = argv.jsonfile //argv._[0];
     let rawdata = fs.readFileSync(filein,'utf-8');
 
