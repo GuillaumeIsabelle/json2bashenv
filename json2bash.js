@@ -149,29 +149,29 @@ yargs(hideBin(process.argv))
     
     .argv;
     
-    
-    //-----------
-    
-    var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
-    
-    if (fileout == null && tmpoutfile != null) fileout = tmpoutfile; 
 
-    
+//-----------
 
-    //var CASE output
-    if (var2Lower && var2Cap) {console.error("Cant't use both low and cap option"); exit(2);}
-    var varCase = "ori";
-    if (var2Lower) varCase = "low";
-    else if (var2Cap) varCase = "cap";
+var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
+
+if (fileout == null && tmpoutfile != null) fileout = tmpoutfile; 
 
 
-    var d = debug;
 
-    if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
-    
-    //var fileout = argv.fileout? argv.fileout: null;
-    var noFileOut = fileout == null;
-    if (d) console.log(fileout, noFileOut);
+//var CASE output
+if (var2Lower && var2Cap) {console.error("Cant't use both low and cap option"); exit(2);}
+var varCase = "ori";
+if (var2Lower) varCase = "low";
+else if (var2Cap) varCase = "cap";
+
+
+var d = debug;
+
+if (verbose)console.log(pipeMode?"Pipe mode active": "Normal mode");
+
+//var fileout = argv.fileout? argv.fileout: null;
+var noFileOut = fileout == null;
+if (d) console.log(fileout, noFileOut);
 
 
 var config = null;
@@ -193,9 +193,9 @@ try {
 
 
 if ((argv.jsonfile != "-" && argv.jsonfile != "__pipe__") || 
-    (fs.existsSync(argv.jsonfile) || fs.existsSync(tmpinputfile)) )
-    {
-    if ( fs.existsSync(tmpinputfile)) {argv.jsonfile = tmpinputfile;}
+  (fs.existsSync(argv.jsonfile) || fs.existsSync(tmpinputfile)) )
+  {
+  if ( fs.existsSync(tmpinputfile)) {argv.jsonfile = tmpinputfile;}
   try {
     
     var filein = argv.jsonfile //argv._[0];
@@ -213,6 +213,7 @@ if ((argv.jsonfile != "-" && argv.jsonfile != "__pipe__") ||
   }}
 else try {
   //read STDIn
+
   process.stdin.setEncoding('utf8');
 
   let inputData = '';

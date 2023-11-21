@@ -9,6 +9,13 @@ const fs = require('fs');
 
 var args = process.argv.slice(2);
 
+
+var tmpinputfile = args[0];
+
+
+var tmpoutfile = args[2] && path.extname(args[2]) === '.csv' ? args[2] : null;
+if (tmpoutfile == null) tmpoutfile = args[1] && path.extname(args[1]) === '.csv' ? args[1] : null;
+
 //add --help as first args if no argument is given and we are not in a pipeline
 var pipeMode = process.stdin._readableState.sync;
 //process.stdin.isTTY || process.stdin.isTTY==false? true:false;
@@ -73,28 +80,34 @@ argv =
 yargs(hideBin(process.argv))
     .scriptName("jsonarr2csv")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [idxname] [fileout]', "by " + author + ", 2022", (yargs) => {
-      yargs.positional('jsonFile', {
-        describe: 'json File input (optional when receiving using pipe)',
-        type: 'string',
-        default: '-'
-      }),
-      yargs.positional('idxname', {
-        describe: 'index name in the file as csv',
-        type: 'string',
-        default: 'null'
-      }),
-      yargs.positional('fileout', {
-        describe: 'env file output',
-        type: 'string',
-        default: null
-      })
+    .command('$0', "by " + author + ", 2022", (yargs) => {
+      yargs
+      // .positional('jsonFile', {
+      //   describe: 'json File input (optional when receiving using pipe)',
+      //   type: 'string',
+      //   default: '-'
+      // }),
+      // yargs.positional('idxname', {
+      //   describe: 'index name in the file as csv',
+      //   type: 'string',
+      //   default: 'null'
+      // }),
+      // yargs.positional('fileout', {
+      //   describe: 'env file output',
+      //   type: 'string',
+      //   default: null
+      // })
     .example("jsonarr2csv sample.json", "simple output to console")
     .example("jsonarr2csv sample.json > outfile.csv", "simple output to file ")
     .example("jsonarr2csv sample.json myindex > outfile.csv", "simple output to file renaming idx")
     .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/jsonarr2csvenv#readme')
     .help()
     })    
+    
+    .option('jsonfile', {default: "__pipe__", type: 'string', description: 'json File input (optional when receiving using pipe)', alias: ['f', 'file']})
+    .option('idxname', {default: null, type: 'string', description: 'object to extract in the file as csv', alias: ['idx']})
+    .option('fileout', {default: null, type: 'string', description: 'env file output', alias: ['out']}) 
+
     .option('numberedindex', {
       alias: 'n',
       default: false,
@@ -125,9 +138,13 @@ yargs(hideBin(process.argv))
     //-----------
     
 var { idxname,numberedindex, fileout, debug, verbose,matchobj } = argv;
-    
+
+if (fileout == null && tmpoutfile != null) fileout = tmpoutfile; 
+
+var noFileOut = fileout == null;
+
 if (idxname != "null") numberedindex = true;
-if (numberedindex==true && idxname=="null")idxname = "idx";
+if (numberedindex==true && idxname==null) idxname = "idx";
 
 
 
@@ -153,32 +170,42 @@ try {
 
 
 
-if (argv.jsonFile != "-")
-  try {
-    var filein = argv.jsonFile //argv._[0];
-    let rawdata = fs.readFileSync(filein);
+if ((argv.jsonfile != "-" && argv.jsonfile != "__pipe__") || 
+(fs.existsSync(argv.jsonfile) || fs.existsSync(tmpinputfile)) )
+{
+  if ( fs.existsSync(tmpinputfile)) {argv.jsonfile = tmpinputfile;}
+ 
+  try {    
+    
+    let rawdata = fs.readFileSync(argv.jsonfile,'utf-8');
     main(rawdata);
 
   } catch (error) {
     console.log("Error reading input file.")
     console.log(error)
-  }
+  }}
 else try {
   //read STDIn
 
-  const stdin = process.stdin;
-  let rawdata = '';
+  process.stdin.setEncoding('utf8');
 
-  stdin.setEncoding('utf8');
+  let inputData = '';
 
-  stdin.on('data', function (chunk) {
-    rawdata += chunk;
+  process.stdin.on('readable', () => {
+    let chunk;
+    // Use a loop to make sure we read all available data.
+    while ((chunk = process.stdin.read()) !== null) {
+      inputData += chunk;
+    }
   });
-  var c = 0;
-  stdin.on('end', function () {
-    //  console.log(c,":Hello " + rawdata);
-    main(rawdata);
-    c++;
+
+  process.stdin.on('end', () => {
+    // Here, all of the data has been read.
+    //console.log(`Received data: ${inputData}`);
+    if (inputData == "") {
+      console.log("-1");
+    }
+    else     main(inputData);
   });
 
   stdin.on('error', console.error);
@@ -188,14 +215,25 @@ else try {
 }
 
 function main(rawdata) {
-  var data = JSON.parse(rawdata);
-  //var h= getCSVHeader(data);
-  //console.log(h);
- // var csvLines = getCSVLines(data);
-  var csvLines ="";
-  if (matchobj)csvLines= getCSVLinesPTO(data);
-  else csvLines = getCSVLinesPTOv1(data);
-  console.log(csvLines);
+  try {
+
+    var data = JSON.parse(rawdata);
+    //var h= getCSVHeader(data);
+    //console.log(h);
+    // var csvLines = getCSVLines(data);
+    var csvLines ="";
+    if (matchobj)csvLines= getCSVLinesPTO(data);
+    else csvLines = getCSVLinesPTOv1(data);
+
+    if (noFileOut)
+        console.log(csvLines);
+      else
+        fs.writeFileSync(fileout, csvLines);
+  }
+  catch (error) {
+    console.log("Error parsing json file or pipe.")
+    console.log(error)
+  }
 }
 
 function getPropFromVarious(data){
