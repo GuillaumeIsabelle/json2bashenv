@@ -10,11 +10,17 @@ const fs = require('fs');
 var args = process.argv.slice(2);
 
 
-var tmpinputfile = args[0];
 
+
+
+//Backward compatibility
+var tmpinputfile = args[0];
 
 var tmpoutfile = args[2] && path.extname(args[2]) === '.csv' ? args[2] : null;
 if (tmpoutfile == null) tmpoutfile = args[1] && path.extname(args[1]) === '.csv' ? args[1] : null;
+
+
+
 
 //add --help as first args if no argument is given and we are not in a pipeline
 var pipeMode = process.stdin._readableState.sync;
