@@ -11,7 +11,10 @@ const fs = require('fs');
 var args = process.argv.slice(2);
 
 
-var tmpfile = args[0];
+var tmpinputfile = args[0];
+
+var tmpoutfile = args[2] && path.extname(args[2]) === '.sh' ? args[2] : null;
+
 
 //add --help as first args if no argument is given and we are not in a pipeline
 var pipeMode = process.stdin._readableState.sync;
@@ -151,6 +154,10 @@ yargs(hideBin(process.argv))
     
     var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
     
+    if (fileout == null && tmpoutfile != null) fileout = tmpoutfile; 
+
+    
+
     //var CASE output
     if (var2Lower && var2Cap) {console.error("Cant't use both low and cap option"); exit(2);}
     var varCase = "ori";
@@ -165,6 +172,8 @@ yargs(hideBin(process.argv))
     //var fileout = argv.fileout? argv.fileout: null;
     var noFileOut = fileout == null;
     if (d) console.log(fileout, noFileOut);
+
+
 var config = null;
 
 
@@ -183,12 +192,10 @@ try {
 
 
 
-if (
-  (argv.jsonfile != "-" && argv.jsonfile != "__pipe__") || 
-    (fs.existsSync(argv.jsonfile) || fs.existsSync(tmpfile))
-    )
+if ((argv.jsonfile != "-" && argv.jsonfile != "__pipe__") || 
+    (fs.existsSync(argv.jsonfile) || fs.existsSync(tmpinputfile)) )
     {
-    if ( fs.existsSync(tmpfile)) {argv.jsonfile = tmpfile;}
+    if ( fs.existsSync(tmpinputfile)) {argv.jsonfile = tmpinputfile;}
   try {
     
     var filein = argv.jsonfile //argv._[0];
@@ -199,7 +206,6 @@ if (
     } else {
       main(rawdata);
     }
-
 
   } catch (error) {
     console.log("Error reading input file.")
@@ -360,7 +366,10 @@ function main(rawdata) {
 
 function writeMainResults(content) {
   try {
-    fs.writeFileSync(fileout, content);
+    if (fileout != null) 
+      fs.writeFileSync(fileout, content);
+    else 
+      console.log(content);
     //file written successfully
   } catch (err) {
     console.log("Error writing file:", fileout);
