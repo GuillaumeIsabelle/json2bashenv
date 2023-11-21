@@ -6,8 +6,12 @@ var path = require('path');
 
 const fs = require('fs');
 
+// console.log("argv 0,1,2:"+ process.argv[0] + " " + process.argv[1] + " " + process.argv[2]);
 
 var args = process.argv.slice(2);
+
+console.log("args 0,1:"+ args[0] + " " + args[1] + " ");
+var tmpfile = args[0];
 
 //add --help as first args if no argument is given and we are not in a pipeline
 var pipeMode = process.stdin._readableState.sync;
@@ -68,34 +72,23 @@ argv =
 yargs(hideBin(process.argv))
     .scriptName("json2bash")
     // .usage(appStartMessage + helpExample)
-    .usage('$0 <jsonFile> [objCsvArray] [fileout]', "by " + author + ", 2023", (yargs) => {
-      yargs.positional('jsonFile', {
-        describe: 'json File input (optional when receiving using pipe)',
-        type: 'string',
-        default: '__pipe__'
-      }),
-      yargs.positional('objCsvArray', {
-        describe: 'object to extract in the file as csv',
-        type: 'string',
-        default: '.'
-      }),
-      yargs.positional('fileout', {
-        describe: 'env file output',
-        type: 'string',
-        default: null
+    .command('$0', "by " + author + ", 2023", (yargs) => {
+      yargs
+        .example("json2bash sample.json --tolower", "simple output")
+        .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
+        .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
+        .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
+        .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
+        .example("json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
+        .example("json2bash samplesublevel.json o.txt --all ", "export all sublevel to a file o.txt")
+        .example("json2bash samplesublevel.json o.txt --all --u", "export all sublevel in upper case to a file o.txt")
+        .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
+        .help()
       })
-    .example("json2bash sample.json --tolower", "simple output")
-    .example("json2bash sample.json . outfile.env --tolower", "simple output to file (the dot signify we keep top level element)")
-    .example("json2bash samplelevel.json \"result\" --tolower", "extract the tag result")
-    .example("json2bash samplelevel.json \"result\" --tolower --oa --prefix", "extract the tag result only (no top level prop will output)")
-    .example("json2bash samplelevel.json \"result,stuff\" --tolower --prefix", "Extract the result and stuff object to lowercase and add their object name as prefix to variable")
-    .example("json2bash samplesublevelon  \"result\" -p;./json2bash samplesublevelon  \"result\" -p -j |./json2bash \"meta\" -p -l -o", "Complex pipe extracting an object then one of its subobject pipe back to be extracted")
-    .example("json2bash samplesublevel.json o.txt --all ", "export all sublevel to a file o.txt")
-    .example("json2bash samplesublevel.json o.txt --all --u", "export all sublevel in upper case to a file o.txt")
-    .epilogue('for more information, find our manual at https://github.com/GuillaumeIsabelle/json2bashenv#readme')
-    .help()
-    })
-    
+      
+    .option('jsonfile', {default: "__pipe__", type: 'string', description: 'json File input (optional when receiving using pipe)', alias: ['f', 'file']})
+    .option('objCsvArray', {default: ".", type: 'string', description: 'object to extract in the file as csv', alias: ['obj']})
+    .option('fileout', {default: null, type: 'string', description: 'env file output', alias: ['out']}) 
     .option('var2Lower', {
       default: false,
       type: 'boolean',
@@ -153,6 +146,7 @@ yargs(hideBin(process.argv))
     
     .argv;
     
+    
     //-----------
     
     var { var2Lower,var2Cap, prefix, onlyselected, fileout, debug, verbose,all,jsonx,exportprefix } = argv;
@@ -174,10 +168,13 @@ yargs(hideBin(process.argv))
 var config = null;
 
 
+console.log("argv: fileout:" + fileout);
+
 if (d) console.log(argv);
 
 //Possible later support for .env preconf 
 try {
+  
   var tst = require('dotenv').config()
   if (tst.parsed) {
     config = new Object()
@@ -187,19 +184,30 @@ try {
 
 
 
-if (argv.jsonFile != "-" && argv.jsonFile != "__pipe__")
+if (
+  (argv.jsonfile != "-" && argv.jsonfile != "__pipe__") || 
+    (fs.existsSync(argv.jsonfile) || fs.existsSync(tmpfile))
+    )
+    {
+    if ( fs.existsSync(tmpfile)) {argv.jsonfile = tmpfile;}
   try {
-    var filein = argv.jsonFile //argv._[0];
-    let rawdata = fs.readFileSync(filein);
-    main(rawdata);
+    console.log("reading..." + argv.jsonfile);
+    var filein = argv.jsonfile //argv._[0];
+    let rawdata = fs.readFileSync(filein,'utf-8');
+
+    if (typeof rawdata !== 'string') {
+      console.error('Error: read data is not text.');
+    } else {
+      main(rawdata);
+    }
+
 
   } catch (error) {
     console.log("Error reading input file.")
     console.log(error)
-  }
+  }}
 else try {
   //read STDIn
-
   process.stdin.setEncoding('utf8');
 
   let inputData = '';
